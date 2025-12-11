@@ -2,9 +2,9 @@ from enum import Enum
 from typing import Any, Optional
 
 from flet.core.constrained_control import ConstrainedControl
-from flet.core.control import OptionalNumber
+from flet.core.control import OptionalNumber, Control
 
-class FletQuill(ConstrainedControl):
+class FletQuill(Control):
     """
     FletQuill Control description.
     """
@@ -29,7 +29,8 @@ class FletQuill(ConstrainedControl):
         #
         # FletQuill specific
         #
-        body_text: Optional[str] = None,
+        allowed_file_types=None,
+        file_path: Optional[str] = None,
     ):
         ConstrainedControl.__init__(
             self,
@@ -43,21 +44,21 @@ class FletQuill(ConstrainedControl):
             bottom=bottom,
             expand=expand,
         )
-        #cc = ConstrainedControl()
 
-        self.body_text = body_text
+        self.file_path = file_path
+        self.allowed_file_types =  [".docx", ".txt", ".html", ".pdf",]
 
     def _get_control_name(self):
         return "flet_quill"
 
     # value
     @property
-    def body_text(self):
+    def file_path(self):
         """
         Value property description.
         """
-        return self._get_attr("body_text")
+        return self._get_attr("file_path")
 
-    @body_text.setter
-    def body_text(self, value):
-        self._set_attr("body_text", value)
+    @file_path.setter
+    def file_path(self, value):
+        self._set_attr("file_path", value)

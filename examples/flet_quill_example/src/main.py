@@ -2,7 +2,7 @@ import flet as ft
 import os
 import sys
 
-# add project src/ folder to sys.path so we use the local custom_draggable
+# Always use most recent build
 src_dir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
 )
@@ -16,13 +16,15 @@ def main(page: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
+
     page.add(
         ft.Container(
             expand=True,
             alignment = ft.alignment.center, 
             content=FletQuill(
                 #tooltip="My new FletQuill Control tooltip",
-                body_text = "My new FletQuill Flet Control", 
+                #body_text = "My new FletQuill Flet Control", 
+                file_path="file/path.docx"
             ),
         ),
     )
