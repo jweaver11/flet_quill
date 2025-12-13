@@ -29,7 +29,6 @@ class FletQuill(Control):
         #
         # FletQuill specific
         #
-        allowed_file_types=None,
         file_path: Optional[str] = None,
     ):
         ConstrainedControl.__init__(
@@ -45,7 +44,7 @@ class FletQuill(Control):
             expand=expand,
         )
 
-        self.file_path = file_path
+        self.file_path: str = file_path
         self.allowed_file_types =  [".docx", ".txt", ".html", ".pdf",]
 
     def _get_control_name(self):

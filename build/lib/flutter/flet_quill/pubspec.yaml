@@ -19,4 +19,22 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  
+
+flutter:
+  fonts:
+    - family: ibarra-real-nova
+      fonts:
+        - asset: assets/fonts/Ibarra_Real_Nova/static/IbarraRealNova-Regular.ttf
+    - family: square-peg
+      fonts:
+        - asset: assets/fonts/Square_Peg/SquarePeg-Regular.ttf
+    - family: nunito
+      fonts:
+        - asset: assets/fonts/Nunito/static/Nunito-Regular.ttf
+    - family: pacifico
+      fonts:
+        - asset: assets/fonts/Pacifico/Pacifico-Regular.ttf
+    - family: roboto-mono
+      fonts:
+        - asset: assets/fonts/Roboto_Mono/static/RobotoMono-Regular.ttf
+

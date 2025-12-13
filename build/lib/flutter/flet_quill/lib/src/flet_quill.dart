@@ -1,4 +1,7 @@
 import 'package:flet/flet.dart';
+import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // <-- use this
@@ -20,20 +23,62 @@ class FletQuillControl extends StatefulWidget {
 class _FletQuillControlState extends State<FletQuillControl> {
   late final QuillController _controller;
   final FocusNode _focusNode = FocusNode();
+  Timer?
+      _saveTimer; // Save timer so we're not constantly writing every keystroke to disk
+
+  void _scheduleSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(seconds: 5), _saveToFile);
+  }
+
+  void _saveToFile() {
+    final filePath = widget.control.attrString("file_path", "") ?? "";
+    if (filePath.isEmpty) return;
+
+    try {
+      final deltaJson = _controller.document.toDelta().toJson();
+      final jsonString = jsonEncode(deltaJson);
+      File(filePath).writeAsStringSync(jsonString);
+    } catch (_) {
+      // handle/log error if you want
+    }
+  }
 
   void _handleControllerChanged() {
     // When toolbar changes the document, make sure editor regains focus.
     if (!_focusNode.hasFocus) {
       _focusNode.requestFocus();
     }
+    _scheduleSave();
   }
 
   @override
   void initState() {
     super.initState();
 
-    final body_text = widget.control.attrString("body_text", "") ?? "";
-    final doc = Document()..insert(0, body_text);
+    final filePath = widget.control.attrString("file_path", "") ?? "";
+    Document doc;
+
+    // Load our existing document
+    if (filePath.isNotEmpty) {
+      try {
+        final file = File(filePath);
+        if (file.existsSync()) {
+          final jsonString = file.readAsStringSync();
+          final deltaJson = jsonDecode(jsonString);
+          doc = Document.fromJson(deltaJson);
+        } else {
+          // File doesn’t exist yet – start with empty document
+          doc = Document();
+        }
+      } catch (_) {
+        // Bad/empty file or JSON – fall back to empty document
+        doc = Document();
+      }
+    } else {
+      // No file_path provided – start empty
+      doc = Document();
+    }
 
     _controller = QuillController(
       document: doc,
@@ -45,6 +90,8 @@ class _FletQuillControlState extends State<FletQuillControl> {
 
   @override
   void dispose() {
+    _saveTimer?.cancel(); // Stop timer if we close this widget
+    _saveToFile(); // Save our changes on close
     _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
     _focusNode.dispose();
