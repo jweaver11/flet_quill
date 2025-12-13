@@ -20,15 +20,24 @@ class FletQuillControl extends StatefulWidget {
   State<FletQuillControl> createState() => _FletQuillControlState();
 }
 
-class _FletQuillControlState extends State<FletQuillControl> {
+class _FletQuillControlState extends State<FletQuillControl>
+    with WidgetsBindingObserver {
   late final QuillController _controller;
   final FocusNode _focusNode = FocusNode();
-  Timer?
-      _saveTimer; // Save timer so we're not constantly writing every keystroke to disk
+  Timer? _saveTimer;
+  bool _pendingSave = false;
 
   void _scheduleSave() {
+    _pendingSave = true;
     _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(seconds: 5), _saveToFile);
+    _saveTimer = Timer(const Duration(seconds: 2), _flushPendingSave);
+  }
+
+  void _flushPendingSave() {
+    _saveTimer?.cancel();
+    if (!_pendingSave) return;
+    _pendingSave = false;
+    _saveToFile();
   }
 
   void _saveToFile() {
@@ -55,6 +64,7 @@ class _FletQuillControlState extends State<FletQuillControl> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     final filePath = widget.control.attrString("file_path", "") ?? "";
     Document doc;
@@ -90,12 +100,21 @@ class _FletQuillControlState extends State<FletQuillControl> {
 
   @override
   void dispose() {
-    _saveTimer?.cancel(); // Stop timer if we close this widget
-    _saveToFile(); // Save our changes on close
+    WidgetsBinding.instance.removeObserver(this);
+    _flushPendingSave(); // ensure last changes are written
     _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _flushPendingSave();
+    }
   }
 
   @override
