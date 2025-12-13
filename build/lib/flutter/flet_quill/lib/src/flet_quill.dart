@@ -147,6 +147,7 @@ class _FletQuillControlState extends State<FletQuillControl>
                 // Broken buttons
                 //afterButtonPressed: _focusNode.requestFocus,
                 showSearchButton: false,
+                showFontFamily: false,
                 showColorButton: false,
                 showBackgroundColorButton: false,
                 showLink: false,
@@ -158,21 +159,26 @@ class _FletQuillControlState extends State<FletQuillControl>
             child: Container(
               decoration: BoxDecoration(
                 //color: Colors.white,
-                border: Border.all(color: baseTheme.colorScheme.outlineVariant),
+                border: Border.all(
+                  color: baseTheme.colorScheme.outlineVariant,
+                ),
               ),
-              padding: const EdgeInsets.only(
-                left: 64.0,
-                top: 80,
-                right: 64.0,
-                bottom: 80.0,
-              ),
-              child: QuillEditor.basic(
-                controller: _controller,
-                focusNode: _focusNode,
-                config: const QuillEditorConfig(
-                  placeholder: 'Enter text',
-                  expands: true,
-                  scrollable: true,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.text,
+                child: QuillEditor.basic(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  config: const QuillEditorConfig(
+                    placeholder: 'Enter text',
+                    expands: true,
+                    scrollable: true,
+                    padding: const EdgeInsets.only(
+                      left: 64.0,
+                      top: 80,
+                      right: 64.0,
+                      bottom: 80.0,
+                    ),
+                  ),
                 ),
               ),
             ),
