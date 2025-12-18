@@ -127,6 +127,8 @@ class _FletQuillControlState extends State<FletQuillControl>
     final double devicePixelRatio = mediaQuery.devicePixelRatio;
     const double _baselineDpr = 1.0; // treat 100% scale as baseline
     final double zoomFactor = (devicePixelRatio / _baselineDpr).clamp(1.0, 2.5);
+    final double zF =
+        zoomFactor * 0.8; // Gives us similar results to google docs and MS Word
 
     double borderWidth = widget.control.attrDouble("border_width", 1.0) ?? 1.0;
 
@@ -142,21 +144,8 @@ class _FletQuillControlState extends State<FletQuillControl>
     // effectively multiply the "width" part (8.5) by the zoom factor by
     // scaling the ratio itself.
     final double? rawAspectRatio = widget.control.attrDouble("aspect_ratio");
-    final double? aspectRatio =
-      (rawAspectRatio != null && rawAspectRatio > 0)
-        ? rawAspectRatio * zoomFactor
-        : null;
-
-    // Whether we are showing a border around the editor
-    final bool borderVisible =
-        widget.control.attrBool("border_visible", true) == true;
-
-    // Optional minimum width for the bordered container. When provided and
-    // border is visible, it takes precedence over the aspect ratio.
-    final double? rawMinWidth =
-        borderVisible ? widget.control.attrDouble("min_width") : null;
-    final double? minWidth = (rawMinWidth != null && rawMinWidth > 0)
-        ? rawMinWidth * zoomFactor
+    final double? aspectRatio = (rawAspectRatio != null && rawAspectRatio > 0)
+        ? rawAspectRatio * zF
         : null;
 
     // If we are gonna center the toolbar or not
@@ -178,12 +167,7 @@ class _FletQuillControlState extends State<FletQuillControl>
     );
 
     Widget sizedEditor;
-    if (minWidth != null && minWidth > 0) {
-      sizedEditor = ConstrainedBox(
-        constraints: BoxConstraints(minWidth: minWidth),
-        child: editorChild,
-      );
-    } else if (aspectRatio != null && aspectRatio > 0) {
+    if (aspectRatio != null && aspectRatio > 0) {
       sizedEditor = AspectRatio(
         aspectRatio: aspectRatio,
         child: editorChild,

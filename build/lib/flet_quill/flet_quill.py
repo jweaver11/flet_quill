@@ -76,8 +76,6 @@ class FletQuill(Control):
         # Center toolbar option
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
-
-        #self.min_width: Optional[float] = 940.0
         
         # Allowed file types (WIP)
         self.allowed_file_types =  [".docx", ".txt", ".html", ".pdf"]
@@ -177,12 +175,3 @@ class FletQuill(Control):
     @center_toolbar.setter
     def center_toolbar(self, value: bool):
         self._set_attr("center_toolbar", value)
-
-    # min_width
-    @property
-    def min_width(self):
-        return self._get_attr("min_width", data_type=float)
-    
-    @min_width.setter
-    def min_width(self, value: float):
-        self._set_attr("min_width", value)
