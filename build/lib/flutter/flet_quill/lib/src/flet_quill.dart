@@ -121,6 +121,13 @@ class _FletQuillControlState extends State<FletQuillControl>
   Widget build(BuildContext context) {
     final baseTheme = Theme.of(context);
 
+    // Use devicePixelRatio to approximate OS display scale and derive
+    // a zoom factor for the editor's minimum width.
+    final mediaQuery = MediaQuery.of(context);
+    final double devicePixelRatio = mediaQuery.devicePixelRatio;
+    const double _baselineDpr = 1.0; // treat 100% scale as baseline
+    final double zoomFactor = (devicePixelRatio / _baselineDpr).clamp(1.0, 2.5);
+
     double borderWidth = widget.control.attrDouble("border_width", 1.0) ?? 1.0;
 
     double paddingLeft = widget.control.attrDouble("padding_left", 0.0) ?? 0.0;
@@ -131,7 +138,14 @@ class _FletQuillControlState extends State<FletQuillControl>
         widget.control.attrDouble("padding_bottom", 0.0) ?? 0.0;
 
     // If aspect_ratio is not provided, don't constrain with AspectRatio at all.
-    final double? aspectRatio = widget.control.attrDouble("aspect_ratio");
+    // When provided (for example 8.5/11.0 for a paper-like page), we
+    // effectively multiply the "width" part (8.5) by the zoom factor by
+    // scaling the ratio itself.
+    final double? rawAspectRatio = widget.control.attrDouble("aspect_ratio");
+    final double? aspectRatio =
+      (rawAspectRatio != null && rawAspectRatio > 0)
+        ? rawAspectRatio * zoomFactor
+        : null;
 
     // Whether we are showing a border around the editor
     final bool borderVisible =
@@ -139,8 +153,11 @@ class _FletQuillControlState extends State<FletQuillControl>
 
     // Optional minimum width for the bordered container. When provided and
     // border is visible, it takes precedence over the aspect ratio.
-    final double? minWidth =
+    final double? rawMinWidth =
         borderVisible ? widget.control.attrDouble("min_width") : null;
+    final double? minWidth = (rawMinWidth != null && rawMinWidth > 0)
+        ? rawMinWidth * zoomFactor
+        : null;
 
     // If we are gonna center the toolbar or not
     final bool centerToolbar =
