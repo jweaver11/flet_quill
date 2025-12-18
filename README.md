@@ -11,7 +11,7 @@ Link to git repository:
 
 ```
 dependencies = [
-  "flet-quill @ git+https://github.com/MyGithubAccount/flet-quill",
+  "flet-quill @ git+https://github.com/jweaver11/flet_quill",
   "flet>=0.28.3",
 ]
 ```
