@@ -121,6 +121,60 @@ class _FletQuillControlState extends State<FletQuillControl>
   Widget build(BuildContext context) {
     final baseTheme = Theme.of(context);
 
+    double borderWidth = widget.control.attrDouble("border_width", 1.0) ?? 1.0;
+
+    double paddingLeft = widget.control.attrDouble("padding_left", 0.0) ?? 0.0;
+    double paddingTop = widget.control.attrDouble("padding_top", 0.0) ?? 0.0;
+    double paddingRight =
+        widget.control.attrDouble("padding_right", 0.0) ?? 0.0;
+    double paddingBottom =
+        widget.control.attrDouble("padding_bottom", 0.0) ?? 0.0;
+
+    // If aspect_ratio is not provided, don't constrain with AspectRatio at all.
+    final double? aspectRatio = widget.control.attrDouble("aspect_ratio");
+
+    // Whether we are showing a border around the editor
+    final bool borderVisible =
+        widget.control.attrBool("border_visible", true) == true;
+
+    // Optional minimum width for the bordered container. When provided and
+    // border is visible, it takes precedence over the aspect ratio.
+    final double? minWidth =
+        borderVisible ? widget.control.attrDouble("min_width") : null;
+
+    // If we are gonna center the toolbar or not
+    final bool centerToolbar =
+        widget.control.attrBool("center_toolbar", false) ?? false;
+
+    final bool showToolbarDivider =
+        widget.control.attrBool("show_toolbar_divider", false) ?? false;
+
+    // Build the editor container once, then wrap it with either a min-width
+    // constraint or an aspect ratio, giving priority to min-width.
+    Widget editorChild = _buildEditorContainer(
+      baseTheme: baseTheme,
+      borderWidth: borderWidth,
+      paddingLeft: paddingLeft,
+      paddingTop: paddingTop,
+      paddingRight: paddingRight,
+      paddingBottom: paddingBottom,
+    );
+
+    Widget sizedEditor;
+    if (minWidth != null && minWidth > 0) {
+      sizedEditor = ConstrainedBox(
+        constraints: BoxConstraints(minWidth: minWidth),
+        child: editorChild,
+      );
+    } else if (aspectRatio != null && aspectRatio > 0) {
+      sizedEditor = AspectRatio(
+        aspectRatio: aspectRatio,
+        child: editorChild,
+      );
+    } else {
+      sizedEditor = editorChild;
+    }
+
     final myControl = Localizations(
       locale: const Locale('en'),
       delegates: const [
@@ -130,22 +184,19 @@ class _FletQuillControlState extends State<FletQuillControl>
         FlutterQuillLocalizations.delegate,
       ],
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: centerToolbar
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         children: [
-          // --- toolbar ---
           Theme(
             data: baseTheme.copyWith(
               colorScheme: baseTheme.colorScheme.copyWith(
-                // selected button background color
                 primary: baseTheme.colorScheme.onSurfaceVariant,
               ),
             ),
             child: QuillSimpleToolbar(
               controller: _controller,
-              // ⬇ NOT const – uses runtime theme values
               config: QuillSimpleToolbarConfig(
-                // Broken buttons
-                //afterButtonPressed: _focusNode.requestFocus,
                 showSearchButton: false,
                 showFontFamily: false,
                 showColorButton: false,
@@ -154,33 +205,15 @@ class _FletQuillControlState extends State<FletQuillControl>
               ),
             ),
           ),
-          //const Divider(),
+          if (showToolbarDivider)
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: baseTheme.colorScheme.outlineVariant,
+            ),
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                //color: Colors.white,
-                border: Border.all(
-                  color: baseTheme.colorScheme.outlineVariant,
-                ),
-              ),
-              child: MouseRegion(
-                cursor: SystemMouseCursors.text,
-                child: QuillEditor.basic(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  config: const QuillEditorConfig(
-                    placeholder: 'Enter text',
-                    expands: true,
-                    scrollable: true,
-                    padding: const EdgeInsets.only(
-                      left: 64.0,
-                      top: 80,
-                      right: 64.0,
-                      bottom: 80.0,
-                    ),
-                  ),
-                ),
-              ),
+            child: Center(
+              child: sizedEditor,
             ),
           ),
         ],
@@ -192,6 +225,45 @@ class _FletQuillControlState extends State<FletQuillControl>
       myControl,
       widget.parent,
       widget.control,
+    );
+  }
+
+  Widget _buildEditorContainer({
+    required ThemeData baseTheme,
+    required double borderWidth,
+    required double paddingLeft,
+    required double paddingTop,
+    required double paddingRight,
+    required double paddingBottom,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: widget.control.attrBool("border_visible", true) == true
+            ? Border.all(
+                color: baseTheme.colorScheme.outlineVariant,
+                width: borderWidth,
+              )
+            : null,
+      ),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.text,
+        child: QuillEditor.basic(
+          controller: _controller,
+          focusNode: _focusNode,
+          config: QuillEditorConfig(
+            placeholder: 'Enter text',
+            expands: true,
+            scrollable: true,
+            autoFocus: true,
+            padding: EdgeInsets.only(
+              left: paddingLeft,
+              top: paddingTop,
+              right: paddingRight,
+              bottom: paddingBottom,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
