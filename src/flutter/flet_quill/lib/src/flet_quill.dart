@@ -162,6 +162,40 @@ class _FletQuillControlState extends State<FletQuillControl>
     final bool showToolbarDivider =
         widget.control.attrBool("show_toolbar_divider", false) ?? false;
 
+    // Optional custom font sizes for the toolbar (JSON list or map).
+    Map<String, String>? fontSizeItems;
+    final String? fontSizesJson = widget.control.attrString("font_sizes");
+    if (fontSizesJson != null && fontSizesJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(fontSizesJson);
+        if (decoded is List) {
+          final items = <String, String>{};
+          for (final v in decoded) {
+            final s = v.toString();
+            if (s.isEmpty) continue;
+            items[s] = s;
+          }
+          if (items.isNotEmpty) {
+            fontSizeItems = items;
+          }
+        } else if (decoded is Map) {
+          final items = <String, String>{};
+          decoded.forEach((k, v) {
+            if (k == null || v == null) return;
+            final ks = k.toString();
+            final vs = v.toString();
+            if (ks.isEmpty || vs.isEmpty) return;
+            items[ks] = vs;
+          });
+          if (items.isNotEmpty) {
+            fontSizeItems = items;
+          }
+        }
+      } catch (_) {
+        // ignore invalid JSON and fall back to defaults
+      }
+    }
+
     // Build the editor container once, then wrap it with either a min-width
     // constraint or an aspect ratio, giving priority to min-width.
     Widget editorChild = _buildEditorContainer(
@@ -212,6 +246,13 @@ class _FletQuillControlState extends State<FletQuillControl>
                     showColorButton: false,
                     showBackgroundColorButton: false,
                     showLink: false,
+                    buttonOptions: fontSizeItems != null
+                        ? QuillSimpleToolbarButtonOptions(
+                            fontSize: QuillToolbarFontSizeButtonOptions(
+                              items: fontSizeItems,
+                            ),
+                          )
+                        : const QuillSimpleToolbarButtonOptions(),
                   ),
                 ),
               );

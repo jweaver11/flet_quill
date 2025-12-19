@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import Any, Optional
 
@@ -44,6 +45,8 @@ class FletQuill(Control):
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
         scroll_toolbar: bool = False,
+
+        font_sizes: Optional[list[float | int | str]] = None,
     ):
         ConstrainedControl.__init__(
             self,
@@ -78,6 +81,10 @@ class FletQuill(Control):
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
         self.scroll_toolbar = scroll_toolbar
+
+        # Optional custom font size items for the toolbar.
+        # Passed through to Flutter Quill as a JSON list.
+        self.font_sizes = font_sizes
         
         # Allowed file types (WIP)
         self.allowed_file_types =  [".docx", ".txt", ".html", ".pdf"]
@@ -186,3 +193,23 @@ class FletQuill(Control):
     @scroll_toolbar.setter
     def scroll_toolbar(self, value: bool):
         self._set_attr("scroll_toolbar", value)
+
+    # font_sizes
+    @property
+    def font_sizes(self) -> Optional[list[Any]]:
+        value = self._get_attr("font_sizes")
+        if value is None:
+            return None
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else None
+        except Exception:
+            return None
+
+    @font_sizes.setter
+    def font_sizes(self, value: Optional[list[float | int | str]]):
+        if value is None:
+            self._set_attr("font_sizes", None)
+            return
+        # Ensure JSON-serializable list.
+        self._set_attr("font_sizes", json.dumps(list(value)))
