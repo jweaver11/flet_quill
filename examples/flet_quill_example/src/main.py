@@ -45,6 +45,7 @@ def main(page: ft.Page):
 
                 show_toolbar_divider=False,  # Show divider below toolbar
                 #center_toolbar=True,   # Center the toolbar (defaults False/left)
+                #scroll_toolbar=True,    # Scroll toolbar horizontally instead of wrapping
             ),
         ),
     )

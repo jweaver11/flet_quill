@@ -11,7 +11,7 @@ class FletQuill(Control):
 
     def __init__(
         self,
-        #
+        # 
         # Control
         #
         opacity: OptionalNumber = None,
@@ -43,6 +43,7 @@ class FletQuill(Control):
 
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
+        scroll_toolbar: bool = False,
     ):
         ConstrainedControl.__init__(
             self,
@@ -76,6 +77,7 @@ class FletQuill(Control):
         # Center toolbar option
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
+        self.scroll_toolbar = scroll_toolbar
         
         # Allowed file types (WIP)
         self.allowed_file_types =  [".docx", ".txt", ".html", ".pdf"]
@@ -175,3 +177,12 @@ class FletQuill(Control):
     @center_toolbar.setter
     def center_toolbar(self, value: bool):
         self._set_attr("center_toolbar", value)
+
+    # scroll_toolbar
+    @property
+    def scroll_toolbar(self):
+        return self._get_attr("scroll_toolbar", data_type=bool)
+
+    @scroll_toolbar.setter
+    def scroll_toolbar(self, value: bool):
+        self._set_attr("scroll_toolbar", value)

@@ -2,6 +2,7 @@ import 'package:flet/flet.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // <-- use this
@@ -24,6 +25,7 @@ class _FletQuillControlState extends State<FletQuillControl>
     with WidgetsBindingObserver {
   late final QuillController _controller;
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _toolbarScrollController = ScrollController();
   Timer? _saveTimer;
   bool _pendingSave = false;
 
@@ -105,6 +107,7 @@ class _FletQuillControlState extends State<FletQuillControl>
     _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
     _focusNode.dispose();
+    _toolbarScrollController.dispose();
     super.dispose();
   }
 
@@ -152,6 +155,10 @@ class _FletQuillControlState extends State<FletQuillControl>
     final bool centerToolbar =
         widget.control.attrBool("center_toolbar", false) ?? false;
 
+    // If true, the toolbar will scroll horizontally instead of wrapping.
+    final bool scrollToolbar =
+        widget.control.attrBool("scroll_toolbar", false) ?? false;
+
     final bool showToolbarDivider =
         widget.control.attrBool("show_toolbar_divider", false) ?? false;
 
@@ -189,22 +196,54 @@ class _FletQuillControlState extends State<FletQuillControl>
             ? CrossAxisAlignment.center
             : CrossAxisAlignment.start,
         children: [
-          Theme(
-            data: baseTheme.copyWith(
-              colorScheme: baseTheme.colorScheme.copyWith(
-                primary: baseTheme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            child: QuillSimpleToolbar(
-              controller: _controller,
-              config: QuillSimpleToolbarConfig(
-                showSearchButton: false,
-                showFontFamily: false,
-                showColorButton: false,
-                showBackgroundColorButton: false,
-                showLink: false,
-              ),
-            ),
+          Builder(
+            builder: (context) {
+              Widget toolbar = Theme(
+                data: baseTheme.copyWith(
+                  colorScheme: baseTheme.colorScheme.copyWith(
+                    primary: baseTheme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                child: QuillSimpleToolbar(
+                  controller: _controller,
+                  config: QuillSimpleToolbarConfig(
+                    showSearchButton: false,
+                    showFontFamily: false,
+                    showColorButton: false,
+                    showBackgroundColorButton: false,
+                    showLink: false,
+                  ),
+                ),
+              );
+
+              if (scrollToolbar) {
+                final scrollBehavior = ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                    PointerDeviceKind.stylus,
+                    PointerDeviceKind.unknown,
+                  },
+                );
+
+                toolbar = ScrollConfiguration(
+                  behavior: scrollBehavior,
+                  child: Scrollbar(
+                    controller: _toolbarScrollController,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _toolbarScrollController,
+                      scrollDirection: Axis.horizontal,
+                      primary: false,
+                      child: toolbar,
+                    ),
+                  ),
+                );
+              }
+
+              return toolbar;
+            },
           ),
           if (showToolbarDivider)
             Divider(
