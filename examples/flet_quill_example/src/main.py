@@ -46,6 +46,10 @@ def main(page: ft.Page):
                 show_toolbar_divider=False,  # Show divider below toolbar
                 #center_toolbar=True,   # Center the toolbar (defaults False/left)
                 #scroll_toolbar=True,    # Scroll toolbar horizontally instead of wrapping
+
+                #show_page_breaks=True,    # Show page breaks in the editor
+                # Custom font sizes for the font-size dropdown
+                font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],
             ),
         ),
     )
