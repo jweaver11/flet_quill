@@ -10,8 +10,8 @@ from flet.core.event import Event
 class FletQuill(Control):
     """
     FletQuill Control is text editor utilizing the Flutter Quill Widget.
-    It works on both desktop and mobile, with styling options to match your apps design
-    
+    It works on both desktop and mobile, with styling options to match your apps design.
+    Able to load in delta, html, or pdf formats, as well as export them.
     Example:
         ft.Container(
             expand=True,\n
@@ -96,6 +96,14 @@ class FletQuill(Control):
         # Set the file path that will be loaded on launch and save to it
         self.file_path: str = file_path
 
+        # Text for the text editor if user doesn't want to just use file_path
+        if text_data is not None:
+            self.text_data = text_data  # Can be delta format, html, or pdf
+
+        # Custom save methods save our text editor if user doesn't want to just use file_path
+        self._save_method: Optional[Callable[[list], None]] = None
+        self.save_method = save_method  # enables/disables save-to-event mode
+
         # Set our border visibility and width
         self.border_visible = border_visible
         self.border_width = border_width
@@ -114,18 +122,10 @@ class FletQuill(Control):
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
 
-        # Allowed file types (WIP)
-        #self.allowed_file_types = [".docx", ".txt", ".html", ".pdf"]
 
         self.font_sizes: list = font_sizes
 
-        if text_data is not None:
-            self.text_data = text_data  # stored as JSON string attr for Flutter
-
-        # ---- New: initial content + custom save callback ----
-        self._save_method: Optional[Callable[[list], None]] = None
-
-        self.save_method = save_method  # enables/disables save-to-event mode
+        
 
     def _get_control_name(self):
         return "flet_quill"

@@ -1,6 +1,7 @@
 import flet as ft
 import os
 import sys
+import json
 
 # Always use most recent build
 src_dir = os.path.abspath(
@@ -13,20 +14,34 @@ from flet_quill import FletQuill
 
 
 app_data_path = os.getenv("FLET_APP_STORAGE_DATA")
+
+
 file_path = os.path.join(app_data_path, "file_path.json")
+file_path_pdf = os.path.join(app_data_path, "file_path.pdf")
+file_path_html = os.path.join(app_data_path, "file_path.html")
 
 
 def main(page: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-
     # Custom save method
     def save_to_db(delta_ops: list):
         print("Called save to db method")
         print("Delta data to save: ", delta_ops)    # Doc editor text
 
+    json_text_data = [{"insert": "This is a test json data"}, {"insert": "\n"}]
 
+    # Set text data from pdf - pass the file path directly
+    pdf_text_data = file_path_pdf
+
+    # Set text data from html - read the file content
+    with open(file_path_html, 'r', encoding='utf-8') as f:
+        html_text_data = f.read()
+
+    # Optional: load delta from JSON file
+    # with open(file_path, 'r') as f:
+    #     delta_text_data = json.load(f)
 
     page.add(
         ft.Container(
@@ -37,8 +52,11 @@ def main(page: ft.Page):
                 # File path string you want to pass in
                 file_path=file_path,    
 
-                # Inital text data
-                #text_data=[{"insert": "Hello"}, {"insert": "\n"}],
+                # Text for the editor if not using file_path
+                #text_data=json_text_data,
+                #text_data=html_text_data,   
+                #text_data=pdf_text_data,   
+
                 #save_method=save_to_db,
 
                 # Set border visibility and width

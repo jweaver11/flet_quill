@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: flet-quill
 Version: 0.1.0
 Summary: FletQuill control for Flet
-Author-email: Flet contributors <you@example.com>
+Author-email: Josh Weaver <joshuatweaver2000@gmail.com>
 Project-URL: Homepage, https://mydomain.dev
 Project-URL: Documentation, https://github.com/MyGithubAccount/flet-quill
 Project-URL: Repository, https://github.com/MyGithubAccount/flet-quill
@@ -10,6 +10,8 @@ Project-URL: Issues, https://github.com/MyGithubAccount/flet-quill/issues
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 Requires-Dist: flet>=0.28.3
+Requires-Dist: beautifulsoup4>=4.12.0
+Requires-Dist: pypdf>=5.0.0
 
 # flet-quill
 FletQuill control for Flet
