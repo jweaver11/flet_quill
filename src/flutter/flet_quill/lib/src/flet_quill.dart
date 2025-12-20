@@ -10,11 +10,13 @@ import 'package:flutter_localizations/flutter_localizations.dart'; // <-- use th
 class FletQuillControl extends StatefulWidget {
   final Control? parent;
   final Control control;
+  final FletControlBackend backend;
 
   const FletQuillControl({
     super.key,
     required this.parent,
     required this.control,
+    required this.backend,
   });
 
   @override
@@ -39,24 +41,41 @@ class _FletQuillControlState extends State<FletQuillControl>
     _saveTimer?.cancel();
     if (!_pendingSave) return;
     _pendingSave = false;
-    _saveToFile();
+    _saveDocument();
   }
 
-  void _saveToFile() {
+  void _saveDocument() {
+    final deltaJson = _controller.document.toDelta().toJson();
+    final jsonString = jsonEncode(deltaJson);
+
+    // Prefer Python callback (event) if enabled
+    final bool saveToEvent =
+        widget.control.attrBool("save_to_event", false) ?? false;
+    if (saveToEvent) {
+      try {
+        widget.backend.triggerControlEvent(
+          widget.control.id,
+          "save",
+          jsonString,
+        );
+      } catch (_) {
+        // ignore
+      }
+      return;
+    }
+
+    // Fallback to file_path
     final filePath = widget.control.attrString("file_path", "") ?? "";
     if (filePath.isEmpty) return;
 
     try {
-      final deltaJson = _controller.document.toDelta().toJson();
-      final jsonString = jsonEncode(deltaJson);
       File(filePath).writeAsStringSync(jsonString);
     } catch (_) {
-      // handle/log error if you want
+      // ignore
     }
   }
 
   void _handleControllerChanged() {
-    // When toolbar changes the document, make sure editor regains focus.
     if (!_focusNode.hasFocus) {
       _focusNode.requestFocus();
     }
@@ -68,11 +87,23 @@ class _FletQuillControlState extends State<FletQuillControl>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    final String initialTextData =
+        widget.control.attrString("text_data", "") ?? "";
     final filePath = widget.control.attrString("file_path", "") ?? "";
+
     Document doc;
 
-    // Load our existing document
-    if (filePath.isNotEmpty) {
+    // 1) Prefer loading from passed-in data
+    if (initialTextData.isNotEmpty) {
+      try {
+        final deltaJson = jsonDecode(initialTextData);
+        doc = Document.fromJson(deltaJson);
+      } catch (_) {
+        doc = Document();
+      }
+    }
+    // 2) Fallback to file_path
+    else if (filePath.isNotEmpty) {
       try {
         final file = File(filePath);
         if (file.existsSync()) {
@@ -80,15 +111,12 @@ class _FletQuillControlState extends State<FletQuillControl>
           final deltaJson = jsonDecode(jsonString);
           doc = Document.fromJson(deltaJson);
         } else {
-          // File doesn’t exist yet – start with empty document
           doc = Document();
         }
       } catch (_) {
-        // Bad/empty file or JSON – fall back to empty document
         doc = Document();
       }
     } else {
-      // No file_path provided – start empty
       doc = Document();
     }
 
@@ -103,7 +131,7 @@ class _FletQuillControlState extends State<FletQuillControl>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _flushPendingSave(); // ensure last changes are written
+    _flushPendingSave();
     _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
     _focusNode.dispose();

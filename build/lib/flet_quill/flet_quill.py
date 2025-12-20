@@ -1,9 +1,11 @@
-import json
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, Callable
+import json
 
 from flet.core.constrained_control import ConstrainedControl
 from flet.core.control import OptionalNumber, Control
+from flet.core.event import Event
+
 
 class FletQuill(Control):
     """
@@ -12,7 +14,7 @@ class FletQuill(Control):
 
     def __init__(
         self,
-        # 
+        #
         # Control
         #
         opacity: OptionalNumber = None,
@@ -31,22 +33,19 @@ class FletQuill(Control):
         # FletQuill specific
         #
         file_path: Optional[str] = None,
-
         border_visible: bool = False,
         border_width: float = 1.0,
-
         padding_left: float = 10.0,
-        padding_top: float = 10.0, 
+        padding_top: float = 10.0,
         padding_right: float = 10.0,
         padding_bottom: float = 10.0,
-
         aspect_ratio: float = None,
-
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
-        scroll_toolbar: bool = False,
-
-        font_sizes: Optional[list[float | int | str]] = None,
+        show_page_breaks: bool = False,
+        # Text Data
+        text_data: Optional[list] = None,
+        save_method: Optional[Callable[[list], None]] = None,
     ):
         ConstrainedControl.__init__(
             self,
@@ -80,35 +79,83 @@ class FletQuill(Control):
         # Center toolbar option
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
-        self.scroll_toolbar = scroll_toolbar
 
-        # Optional custom font size items for the toolbar.
-        # Passed through to Flutter Quill as a JSON list.
-        self.font_sizes = font_sizes
-        
+        # Show page breaks option
+        self.show_page_breaks = show_page_breaks
+
         # Allowed file types (WIP)
-        self.allowed_file_types =  [".docx", ".txt", ".html", ".pdf"]
+        self.allowed_file_types = [".docx", ".txt", ".html", ".pdf"]
+
+        # ---- New: initial content + custom save callback ----
+        self._save_method: Optional[Callable[[list], None]] = None
+
+        if text_data is not None:
+            self.text_data = text_data  # stored as JSON string attr for Flutter
+
+        self.save_method = save_method  # enables/disables save-to-event mode
 
     def _get_control_name(self):
         return "flet_quill"
 
-    # value
+    # file_path
     @property
     def file_path(self):
-        """
-        Value property description.
-        """
         return self._get_attr("file_path")
 
     @file_path.setter
     def file_path(self, value):
         self._set_attr("file_path", value)
 
+    # text_data (JSON string attribute consumed by Flutter)
+    @property
+    def text_data(self) -> Optional[list]:
+        v = self._get_attr("text_data")
+        if not v:
+            return None
+        try:
+            return json.loads(v)
+        except Exception:
+            return None
+
+    @text_data.setter
+    def text_data(self, value: Optional[list]):
+        if value is None:
+            self._set_attr("text_data", None)
+            return
+        self._set_attr("text_data", json.dumps(value))
+
+    # save_method (Python-side callback; Flutter triggers "save" event)
+    @property
+    def save_method(self) -> Optional[Callable[[list], None]]:
+        return self._save_method
+
+    @save_method.setter
+    def save_method(self, cb: Optional[Callable[[list], None]]):
+        self._save_method = cb
+
+        # Let Flutter know whether it should write to file_path or emit an event.
+        self._set_attr("save_to_event", cb is not None)
+
+        # Register/unregister handler.
+        if cb is not None:
+            self._add_event_handler("save", self.__handle_save_event)
+        else:
+            self._add_event_handler("save", None)
+
+    def __handle_save_event(self, e: Event):
+        if self._save_method is None:
+            return
+        try:
+            payload = json.loads(e.data) if e.data else []
+        except Exception:
+            payload = []
+        self._save_method(payload)
+
     # border_visible
     @property
     def border_visible(self):
         return self._get_attr("border_visible", data_type=bool)
-    
+
     @border_visible.setter
     def border_visible(self, value: bool):
         self._set_attr("border_visible", value)
@@ -117,7 +164,7 @@ class FletQuill(Control):
     @property
     def border_width(self):
         return self._get_attr("border_width", data_type=float)
-    
+
     @border_width.setter
     def border_width(self, value: float):
         self._set_attr("border_width", value)
@@ -126,7 +173,7 @@ class FletQuill(Control):
     @property
     def padding_left(self):
         return self._get_attr("padding_left", data_type=float)
-    
+
     @padding_left.setter
     def padding_left(self, value: float):
         self._set_attr("padding_left", value)
@@ -135,7 +182,7 @@ class FletQuill(Control):
     @property
     def padding_top(self):
         return self._get_attr("padding_top", data_type=float)
-    
+
     @padding_top.setter
     def padding_top(self, value: float):
         self._set_attr("padding_top", value)
@@ -144,7 +191,7 @@ class FletQuill(Control):
     @property
     def padding_right(self):
         return self._get_attr("padding_right", data_type=float)
-    
+
     @padding_right.setter
     def padding_right(self, value: float):
         self._set_attr("padding_right", value)
@@ -153,7 +200,7 @@ class FletQuill(Control):
     @property
     def padding_bottom(self):
         return self._get_attr("padding_bottom", data_type=float)
-    
+
     @padding_bottom.setter
     def padding_bottom(self, value: float):
         self._set_attr("padding_bottom", value)
@@ -162,7 +209,7 @@ class FletQuill(Control):
     @property
     def aspect_ratio(self):
         return self._get_attr("aspect_ratio", data_type=float)
-    
+
     @aspect_ratio.setter
     def aspect_ratio(self, value: float):
         self._set_attr("aspect_ratio", value)
@@ -171,7 +218,7 @@ class FletQuill(Control):
     @property
     def show_toolbar_divider(self):
         return self._get_attr("show_toolbar_divider", data_type=bool)
-    
+
     @show_toolbar_divider.setter
     def show_toolbar_divider(self, value: bool):
         self._set_attr("show_toolbar_divider", value)
@@ -180,36 +227,16 @@ class FletQuill(Control):
     @property
     def center_toolbar(self):
         return self._get_attr("center_toolbar", data_type=bool)
-    
+
     @center_toolbar.setter
     def center_toolbar(self, value: bool):
         self._set_attr("center_toolbar", value)
 
-    # scroll_toolbar
+    # show_page_breaks
     @property
-    def scroll_toolbar(self):
-        return self._get_attr("scroll_toolbar", data_type=bool)
+    def show_page_breaks(self):
+        return self._get_attr("show_page_breaks", data_type=bool)
 
-    @scroll_toolbar.setter
-    def scroll_toolbar(self, value: bool):
-        self._set_attr("scroll_toolbar", value)
-
-    # font_sizes
-    @property
-    def font_sizes(self) -> Optional[list[Any]]:
-        value = self._get_attr("font_sizes")
-        if value is None:
-            return None
-        try:
-            parsed = json.loads(value)
-            return parsed if isinstance(parsed, list) else None
-        except Exception:
-            return None
-
-    @font_sizes.setter
-    def font_sizes(self, value: Optional[list[float | int | str]]):
-        if value is None:
-            self._set_attr("font_sizes", None)
-            return
-        # Ensure JSON-serializable list.
-        self._set_attr("font_sizes", json.dumps(list(value)))
+    @show_page_breaks.setter
+    def show_page_breaks(self, value: bool):
+        self._set_attr("show_page_breaks", value)

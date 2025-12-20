@@ -21,6 +21,12 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
 
+    # Custom save method
+    def save_to_db(delta_ops: list):
+        print("Called save to db method")
+        print("Delta data to save: ", delta_ops)    # Doc editor text
+
+
 
     page.add(
         ft.Container(
@@ -30,6 +36,10 @@ def main(page: ft.Page):
 
                 # File path string you want to pass in
                 file_path=file_path,    
+
+                # Inital text data
+                #text_data=[{"insert": "Hello"}, {"insert": "\n"}],
+                #save_method=save_to_db,
 
                 # Set border visibility and width
                 border_visible=True,
@@ -49,7 +59,7 @@ def main(page: ft.Page):
 
                 #show_page_breaks=True,    # Show page breaks in the editor
                 # Custom font sizes for the font-size dropdown
-                font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],
+                #font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],
             ),
         ),
     )

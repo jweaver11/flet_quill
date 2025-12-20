@@ -2,7 +2,6 @@ import 'package:flet/flet.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -11,11 +10,13 @@ import 'package:flutter_localizations/flutter_localizations.dart'; // <-- use th
 class FletQuillControl extends StatefulWidget {
   final Control? parent;
   final Control control;
+  final FletControlBackend backend;
 
   const FletQuillControl({
     super.key,
     required this.parent,
     required this.control,
+    required this.backend,
   });
 
   @override
@@ -27,8 +28,6 @@ class _FletQuillControlState extends State<FletQuillControl>
   late final QuillController _controller;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _toolbarScrollController = ScrollController();
-  final ScrollController _editorScrollController = ScrollController();
-
   Timer? _saveTimer;
   bool _pendingSave = false;
 
@@ -42,24 +41,41 @@ class _FletQuillControlState extends State<FletQuillControl>
     _saveTimer?.cancel();
     if (!_pendingSave) return;
     _pendingSave = false;
-    _saveToFile();
+    _saveDocument();
   }
 
-  void _saveToFile() {
+  void _saveDocument() {
+    final deltaJson = _controller.document.toDelta().toJson();
+    final jsonString = jsonEncode(deltaJson);
+
+    // Prefer Python callback (event) if enabled
+    final bool saveToEvent =
+        widget.control.attrBool("save_to_event", false) ?? false;
+    if (saveToEvent) {
+      try {
+        widget.backend.triggerControlEvent(
+          widget.control.id,
+          "save",
+          jsonString,
+        );
+      } catch (_) {
+        // ignore
+      }
+      return;
+    }
+
+    // Fallback to file_path
     final filePath = widget.control.attrString("file_path", "") ?? "";
     if (filePath.isEmpty) return;
 
     try {
-      final deltaJson = _controller.document.toDelta().toJson();
-      final jsonString = jsonEncode(deltaJson);
       File(filePath).writeAsStringSync(jsonString);
     } catch (_) {
-      // handle/log error if you want
+      // ignore
     }
   }
 
   void _handleControllerChanged() {
-    // When toolbar changes the document, make sure editor regains focus.
     if (!_focusNode.hasFocus) {
       _focusNode.requestFocus();
     }
@@ -71,11 +87,23 @@ class _FletQuillControlState extends State<FletQuillControl>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    final String initialTextData =
+        widget.control.attrString("text_data", "") ?? "";
     final filePath = widget.control.attrString("file_path", "") ?? "";
+
     Document doc;
 
-    // Load our existing document
-    if (filePath.isNotEmpty) {
+    // 1) Prefer loading from passed-in data
+    if (initialTextData.isNotEmpty) {
+      try {
+        final deltaJson = jsonDecode(initialTextData);
+        doc = Document.fromJson(deltaJson);
+      } catch (_) {
+        doc = Document();
+      }
+    }
+    // 2) Fallback to file_path
+    else if (filePath.isNotEmpty) {
       try {
         final file = File(filePath);
         if (file.existsSync()) {
@@ -83,15 +111,12 @@ class _FletQuillControlState extends State<FletQuillControl>
           final deltaJson = jsonDecode(jsonString);
           doc = Document.fromJson(deltaJson);
         } else {
-          // File doesn’t exist yet – start with empty document
           doc = Document();
         }
       } catch (_) {
-        // Bad/empty file or JSON – fall back to empty document
         doc = Document();
       }
     } else {
-      // No file_path provided – start empty
       doc = Document();
     }
 
@@ -106,12 +131,11 @@ class _FletQuillControlState extends State<FletQuillControl>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _flushPendingSave(); // ensure last changes are written
+    _flushPendingSave();
     _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
     _focusNode.dispose();
     _toolbarScrollController.dispose();
-    _editorScrollController.dispose();
     super.dispose();
   }
 
@@ -154,11 +178,6 @@ class _FletQuillControlState extends State<FletQuillControl>
     final double? aspectRatio = (rawAspectRatio != null && rawAspectRatio > 0)
         ? rawAspectRatio * zF
         : null;
-
-    // If true, draw horizontal page-break dividers at each "page height".
-    // Only applies when aspect_ratio is provided.
-    final bool showPageBreaks =
-        widget.control.attrBool("show_page_breaks", false) ?? false;
 
     // If we are gonna center the toolbar or not
     final bool centerToolbar =
@@ -214,8 +233,6 @@ class _FletQuillControlState extends State<FletQuillControl>
       paddingTop: paddingTop,
       paddingRight: paddingRight,
       paddingBottom: paddingBottom,
-      aspectRatio: aspectRatio,
-      showPageBreaks: showPageBreaks,
     );
 
     Widget sizedEditor;
@@ -327,72 +344,7 @@ class _FletQuillControlState extends State<FletQuillControl>
     required double paddingTop,
     required double paddingRight,
     required double paddingBottom,
-    required double? aspectRatio,
-    required bool showPageBreaks,
   }) {
-    final editor = MouseRegion(
-      cursor: SystemMouseCursors.text,
-      child: QuillEditor.basic(
-        controller: _controller,
-        focusNode: _focusNode,
-        config: QuillEditorConfig(
-          placeholder: 'Enter text',
-          expands: true,
-          scrollable: true,
-          autoFocus: true,
-          // NOTE: Most flutter_quill versions expose scrollController on the config.
-          // If your version doesn't, we can switch to the non-basic constructor.
-          //scrollController: _editorScrollController,
-          padding: EdgeInsets.only(
-            left: paddingLeft,
-            top: paddingTop,
-            right: paddingRight,
-            bottom: paddingBottom,
-          ),
-        ),
-      ),
-    );
-
-    Widget content = editor;
-
-    // Draw page-break dividers only when:
-    // - user opted in, and
-    // - aspect_ratio is provided (paging model is defined)
-    if (showPageBreaks && aspectRatio != null && aspectRatio > 0) {
-      content = LayoutBuilder(
-        builder: (context, constraints) {
-          // Prefer actual laid-out height if finite (AspectRatio usually makes it exact).
-          final double pageHeight =
-              (constraints.maxHeight.isFinite && constraints.maxHeight > 0)
-                  ? constraints.maxHeight
-                  : (constraints.maxWidth / aspectRatio);
-
-          final Color lineColor =
-              baseTheme.colorScheme.outlineVariant.withOpacity(0.8);
-
-          return AnimatedBuilder(
-            animation: _editorScrollController,
-            child: editor,
-            builder: (context, child) {
-              final double scrollOffset = _editorScrollController.hasClients
-                  ? _editorScrollController.offset
-                  : 0.0;
-
-              return CustomPaint(
-                foregroundPainter: _PageBreakPainter(
-                  scrollOffset: scrollOffset,
-                  pageHeight: pageHeight,
-                  color: lineColor,
-                  thickness: 1.0,
-                ),
-                child: child,
-              );
-            },
-          );
-        },
-      );
-    }
-
     return Container(
       decoration: BoxDecoration(
         border: widget.control.attrBool("border_visible", true) == true
@@ -402,55 +354,25 @@ class _FletQuillControlState extends State<FletQuillControl>
               )
             : null,
       ),
-      child: content,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.text,
+        child: QuillEditor.basic(
+          controller: _controller,
+          focusNode: _focusNode,
+          config: QuillEditorConfig(
+            placeholder: 'Enter text',
+            expands: true,
+            scrollable: true,
+            autoFocus: true,
+            padding: EdgeInsets.only(
+              left: paddingLeft,
+              top: paddingTop,
+              right: paddingRight,
+              bottom: paddingBottom,
+            ),
+          ),
+        ),
+      ),
     );
-  }
-}
-
-class _PageBreakPainter extends CustomPainter {
-  final double scrollOffset;
-  final double pageHeight;
-  final Color color;
-  final double thickness;
-
-  const _PageBreakPainter({
-    required this.scrollOffset,
-    required this.pageHeight,
-    required this.color,
-    required this.thickness,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (pageHeight <= 0 || !pageHeight.isFinite) return;
-    if (size.height <= 0 || size.width <= 0) return;
-
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = thickness;
-
-    // Draw page breaks at y = N * pageHeight in document coordinates.
-    // Convert to viewport coordinates by subtracting scrollOffset.
-    final int startPage = math.max(0, (scrollOffset / pageHeight).floor());
-    int pageIndex = startPage + 1;
-
-    while (true) {
-      final double y = (pageIndex * pageHeight) - scrollOffset;
-      if (y >= size.height) break;
-      if (y > 0) {
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-      }
-      pageIndex++;
-      // safety guard (shouldn't trigger in practice)
-      if (pageIndex - startPage > 1000) break;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PageBreakPainter oldDelegate) {
-    return oldDelegate.scrollOffset != scrollOffset ||
-        oldDelegate.pageHeight != pageHeight ||
-        oldDelegate.color != color ||
-        oldDelegate.thickness != thickness;
   }
 }

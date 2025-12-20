@@ -8,6 +8,7 @@ CreateControlFactory createControl = (CreateControlArgs args) {
       return FletQuillControl(
         parent: args.parent,
         control: args.control,
+        backend: args.backend,
       );
     default:
       return null;
