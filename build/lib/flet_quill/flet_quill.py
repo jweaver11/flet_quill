@@ -9,7 +9,41 @@ from flet.core.event import Event
 
 class FletQuill(Control):
     """
-    FletQuill Control description.
+    FletQuill Control is text editor utilizing the Flutter Quill Widget.
+    It works on both desktop and mobile, with styling options to match your apps design
+    
+    Example:
+        ft.Container(
+            expand=True,\n
+            alignment=ft.alignment.center,\n
+            content=FletQuill(
+            
+                ### Loading and saving text from editor\n
+                file_path=file_path,    # File path to load text from and save to \n
+
+                text_data=[{"insert": "Hello there"}],  # Inital text data (Will ignore file_path loading)\n
+                save_method=save_to_db, # Custom save methods (Will ignore file_path saving)\n
+
+                ### Styling
+                border_visible=True,    # Give text editor a border (like docs and word)\n
+                border_width=1.0,       # width of the border (defaults to 1.0)\n
+                padding_left=72.0,      # Padding of the text inside the border left\n
+                padding_top=72.0,       # top\n
+                padding_right=72.0,     # right\n
+                padding_bottom=72.0,    # bottom\n
+
+                show_toolbar_divider=False,  # Show divider below toolbar\n
+                center_toolbar=True,    # Center the toolbar (defaults False/left)\n
+                scroll_toolbar=True,    # Scroll toolbar horizontally instead of wrapping\n
+
+                aspect_ratio=8.5/11.0,  # Aspect ratio of the editor\n
+                use_zoom_factor=True,    # Use the system zoom factor so editor scale inversely with screen size. Example: Editor zooms less on 27in monitor, and more on laptop size\n
+
+                show_page_breaks=True,    # Show page breaks in the editor when the aspect ratio has been hit (requires aspect_ratio)\n
+                
+                font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],  # Custom font sizes for the font-size dropdown\n
+            ),
+        ),
     """
 
     def __init__(
@@ -32,7 +66,9 @@ class FletQuill(Control):
         #
         # FletQuill specific
         #
-        file_path: Optional[str] = None,
+        file_path: Optional[str] = None,    
+        text_data: Optional[list] = None,
+        save_method: Optional[Callable[[list], None]] = None,
         border_visible: bool = False,
         border_width: float = 1.0,
         padding_left: float = 10.0,
@@ -40,12 +76,12 @@ class FletQuill(Control):
         padding_right: float = 10.0,
         padding_bottom: float = 10.0,
         aspect_ratio: float = None,
+        use_zoom_factor: bool = True,
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
         show_page_breaks: bool = False,
-        # Text Data
-        text_data: Optional[list] = None,
-        save_method: Optional[Callable[[list], None]] = None,
+        font_sizes: list = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 32, 40, 48, 64],
+        
     ):
         ConstrainedControl.__init__(
             self,
@@ -60,37 +96,39 @@ class FletQuill(Control):
             expand=expand,
         )
 
-        # Set the file path attribute
+        # Set the file path that will be loaded on launch and save to it
         self.file_path: str = file_path
 
         # Set our border visibility and width
         self.border_visible = border_visible
         self.border_width = border_width
 
-        # Set padding attributes
+        # Set padding within the editor
         self.padding_left = padding_left
         self.padding_top = padding_top
         self.padding_right = padding_right
         self.padding_bottom = padding_bottom
 
-        # Set the aspect ratio usage
+        # Set the aspect ratio usage, and if we'll use the zoom factor
         self.aspect_ratio = aspect_ratio
+        self.use_zoom_factor = use_zoom_factor  # If set false, editor will always use exact aspect ratio
 
         # Center toolbar option
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
 
-        # Show page breaks option
         self.show_page_breaks = show_page_breaks
 
         # Allowed file types (WIP)
-        self.allowed_file_types = [".docx", ".txt", ".html", ".pdf"]
+        #self.allowed_file_types = [".docx", ".txt", ".html", ".pdf"]
 
-        # ---- New: initial content + custom save callback ----
-        self._save_method: Optional[Callable[[list], None]] = None
+        self.font_sizes: list = font_sizes
 
         if text_data is not None:
             self.text_data = text_data  # stored as JSON string attr for Flutter
+
+        # ---- New: initial content + custom save callback ----
+        self._save_method: Optional[Callable[[list], None]] = None
 
         self.save_method = save_method  # enables/disables save-to-event mode
 
@@ -214,6 +252,15 @@ class FletQuill(Control):
     def aspect_ratio(self, value: float):
         self._set_attr("aspect_ratio", value)
 
+    # use_zoom_factor
+    @property
+    def use_zoom_factor(self):
+        return self._get_attr("use_zoom_factor", data_type=bool)
+    
+    @use_zoom_factor.setter
+    def use_zoom_factor(self, value: bool):
+        self._set_attr("use_zoom_factor", value)
+
     # show_toolbar_divider
     @property
     def show_toolbar_divider(self):
@@ -240,3 +287,21 @@ class FletQuill(Control):
     @show_page_breaks.setter
     def show_page_breaks(self, value: bool):
         self._set_attr("show_page_breaks", value)
+
+    # font_sizes
+    @property
+    def font_sizes(self) -> list:
+        v = self._get_attr("font_sizes")
+        if not v:
+            return []
+        try:
+            return json.loads(v)
+        except Exception:
+            return []
+        
+    @font_sizes.setter
+    def font_sizes(self, value: list):
+        if value is None:
+            self._set_attr("font_sizes", None)
+            return
+        self._set_attr("font_sizes", json.dumps(value))

@@ -54,6 +54,7 @@ def main(page: ft.Page):
                 aspect_ratio=8.5/11.0,  # paper-like ratio
 
                 show_toolbar_divider=False,  # Show divider below toolbar
+                #use_zoom_factor=False,      # Use zoom factor when using aspect ratio (defaults True)
                 #center_toolbar=True,   # Center the toolbar (defaults False/left)
                 #scroll_toolbar=True,    # Scroll toolbar horizontally instead of wrapping
 

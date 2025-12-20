@@ -158,8 +158,14 @@ class _FletQuillControlState extends State<FletQuillControl>
     final double devicePixelRatio = mediaQuery.devicePixelRatio;
     const double _baselineDpr = 1.0; // treat 100% scale as baseline
     final double zoomFactor = (devicePixelRatio / _baselineDpr).clamp(1.0, 2.5);
-    final double zF =
-        zoomFactor * 0.8; // Gives us similar results to google docs and MS Word
+
+    // NEW: allow disabling zoom-factor scaling so aspect_ratio is exact.
+    final bool useZoomFactor =
+        widget.control.attrBool("use_zoom_factor", true) ?? true;
+
+    final double zF = useZoomFactor
+        ? zoomFactor * 0.8 // current behavior (docs/word-like)
+        : 1.0; // exact aspect_ratio, no scaling
 
     double borderWidth = widget.control.attrDouble("border_width", 1.0) ?? 1.0;
 
@@ -171,9 +177,7 @@ class _FletQuillControlState extends State<FletQuillControl>
         widget.control.attrDouble("padding_bottom", 0.0) ?? 0.0;
 
     // If aspect_ratio is not provided, don't constrain with AspectRatio at all.
-    // When provided (for example 8.5/11.0 for a paper-like page), we
-    // effectively multiply the "width" part (8.5) by the zoom factor by
-    // scaling the ratio itself.
+    // When provided, apply zoom scaling only when use_zoom_factor == true.
     final double? rawAspectRatio = widget.control.attrDouble("aspect_ratio");
     final double? aspectRatio = (rawAspectRatio != null && rawAspectRatio > 0)
         ? rawAspectRatio * zF
