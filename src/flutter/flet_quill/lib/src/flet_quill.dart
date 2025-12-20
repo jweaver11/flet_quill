@@ -273,7 +273,7 @@ class _FletQuillControlState extends State<FletQuillControl>
                 child: QuillSimpleToolbar(
                   controller: _controller,
                   config: QuillSimpleToolbarConfig(
-                    showSearchButton: false,
+                    showSearchButton: false, // Broken buttons
                     showFontFamily: false,
                     showColorButton: false,
                     showBackgroundColorButton: false,

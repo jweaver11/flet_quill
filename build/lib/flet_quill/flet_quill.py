@@ -38,8 +38,6 @@ class FletQuill(Control):
 
                 aspect_ratio=8.5/11.0,  # Aspect ratio of the editor\n
                 use_zoom_factor=True,    # Use the system zoom factor so editor scale inversely with screen size. Example: Editor zooms less on 27in monitor, and more on laptop size\n
-
-                show_page_breaks=True,    # Show page breaks in the editor when the aspect ratio has been hit (requires aspect_ratio)\n
                 
                 font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],  # Custom font sizes for the font-size dropdown\n
             ),
@@ -79,7 +77,6 @@ class FletQuill(Control):
         use_zoom_factor: bool = True,
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
-        show_page_breaks: bool = False,
         font_sizes: list = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 32, 40, 48, 64],
         
     ):
@@ -116,8 +113,6 @@ class FletQuill(Control):
         # Center toolbar option
         self.show_toolbar_divider = show_toolbar_divider
         self.center_toolbar = center_toolbar
-
-        self.show_page_breaks = show_page_breaks
 
         # Allowed file types (WIP)
         #self.allowed_file_types = [".docx", ".txt", ".html", ".pdf"]
@@ -278,15 +273,6 @@ class FletQuill(Control):
     @center_toolbar.setter
     def center_toolbar(self, value: bool):
         self._set_attr("center_toolbar", value)
-
-    # show_page_breaks
-    @property
-    def show_page_breaks(self):
-        return self._get_attr("show_page_breaks", data_type=bool)
-
-    @show_page_breaks.setter
-    def show_page_breaks(self, value: bool):
-        self._set_attr("show_page_breaks", value)
 
     # font_sizes
     @property
