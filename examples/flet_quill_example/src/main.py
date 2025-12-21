@@ -50,7 +50,7 @@ def main(page: ft.Page):
             content=FletQuill(
 
                 # File path string you want to pass in
-                file_path=file_path,    
+                #file_path=file_path,    
 
                 # Text for the editor if not using file_path
                 #text_data=json_text_data,
@@ -78,6 +78,8 @@ def main(page: ft.Page):
 
                 # Custom font sizes for the font-size dropdown
                 #font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],
+
+                placeholder_text="Start typing your document here...",
             ),
         ),
     )

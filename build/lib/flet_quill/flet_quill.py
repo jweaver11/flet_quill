@@ -1,10 +1,12 @@
 from enum import Enum
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Union
 import json
 
 from flet.core.constrained_control import ConstrainedControl
 from flet.core.control import OptionalNumber, Control
 from flet.core.event import Event
+
+from .text_converter import to_delta_ops
 
 
 class FletQuill(Control):
@@ -65,7 +67,7 @@ class FletQuill(Control):
         # FletQuill specific
         #
         file_path: Optional[str] = None,    
-        text_data: Optional[list] = None,
+        text_data: Optional[Union[list, str, bytes, bytearray]] = None,
         save_method: Optional[Callable[[list], None]] = None,
         border_visible: bool = False,
         border_width: float = 1.0,
@@ -78,6 +80,7 @@ class FletQuill(Control):
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
         font_sizes: list = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 32, 40, 48, 64],
+        placeholder_text: str = "Enter text here...",
         
     ):
         ConstrainedControl.__init__(
@@ -124,6 +127,7 @@ class FletQuill(Control):
 
 
         self.font_sizes: list = font_sizes
+        self.placeholder_text: str = placeholder_text
 
         
 
@@ -151,11 +155,12 @@ class FletQuill(Control):
             return None
 
     @text_data.setter
-    def text_data(self, value: Optional[list]):
+    def text_data(self, value: Optional[Union[list, str, bytes, bytearray]]):
         if value is None:
             self._set_attr("text_data", None)
             return
-        self._set_attr("text_data", json.dumps(value))
+        delta = to_delta_ops(value)
+        self._set_attr("text_data", json.dumps(delta))
 
     # save_method (Python-side callback; Flutter triggers "save" event)
     @property
@@ -291,3 +296,13 @@ class FletQuill(Control):
             self._set_attr("font_sizes", None)
             return
         self._set_attr("font_sizes", json.dumps(value))
+
+
+    # placeholder_text
+    @property
+    def placeholder_text(self) -> str:
+        return self._get_attr("placeholder_text")
+    
+    @placeholder_text.setter
+    def placeholder_text(self, value: str):
+        self._set_attr("placeholder_text", value)

@@ -176,6 +176,10 @@ class _FletQuillControlState extends State<FletQuillControl>
     double paddingBottom =
         widget.control.attrDouble("padding_bottom", 0.0) ?? 0.0;
 
+    final String placeHolderText =
+        widget.control.attrString("placeholder_text", "Enter text here...") ??
+            "Enter text here...";
+
     // If aspect_ratio is not provided, don't constrain with AspectRatio at all.
     // When provided, apply zoom scaling only when use_zoom_factor == true.
     final double? rawAspectRatio = widget.control.attrDouble("aspect_ratio");
@@ -237,6 +241,7 @@ class _FletQuillControlState extends State<FletQuillControl>
       paddingTop: paddingTop,
       paddingRight: paddingRight,
       paddingBottom: paddingBottom,
+      placeHolderText: placeHolderText,
     );
 
     Widget sizedEditor;
@@ -348,6 +353,7 @@ class _FletQuillControlState extends State<FletQuillControl>
     required double paddingTop,
     required double paddingRight,
     required double paddingBottom,
+    required String placeHolderText,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -364,7 +370,7 @@ class _FletQuillControlState extends State<FletQuillControl>
           controller: _controller,
           focusNode: _focusNode,
           config: QuillEditorConfig(
-            placeholder: 'Enter text',
+            placeholder: placeHolderText,
             expands: true,
             scrollable: true,
             autoFocus: true,

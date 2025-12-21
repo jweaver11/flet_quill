@@ -80,6 +80,7 @@ class FletQuill(Control):
         show_toolbar_divider: bool = True,
         center_toolbar: bool = False,
         font_sizes: list = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 32, 40, 48, 64],
+        placeholder_text: str = "Enter text here...",
         
     ):
         ConstrainedControl.__init__(
@@ -126,6 +127,7 @@ class FletQuill(Control):
 
 
         self.font_sizes: list = font_sizes
+        self.placeholder_text: str = placeholder_text
 
         
 
@@ -294,3 +296,13 @@ class FletQuill(Control):
             self._set_attr("font_sizes", None)
             return
         self._set_attr("font_sizes", json.dumps(value))
+
+
+    # placeholder_text
+    @property
+    def placeholder_text(self) -> str:
+        return self._get_attr("placeholder_text")
+    
+    @placeholder_text.setter
+    def placeholder_text(self, value: str):
+        self._set_attr("placeholder_text", value)
