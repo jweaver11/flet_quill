@@ -16,48 +16,39 @@ from flet_quill import FletQuill
 app_data_path = os.getenv("FLET_APP_STORAGE_DATA")
 
 
-file_path = os.path.join(app_data_path, "file_path.json")
+file_path_deltaops = os.path.join(app_data_path, "file_path_delta.json")
+
+# Can convert to these formats
 file_path_pdf = os.path.join(app_data_path, "file_path.pdf")
 file_path_html = os.path.join(app_data_path, "file_path.html")
+file_path_docx = os.path.join(app_data_path, "file_path.docx")
+file_path_txt = os.path.join(app_data_path, "file_path.txt")
+file_path_rtf = os.path.join(app_data_path, "file_path.rtf")
+file_path_md = os.path.join(app_data_path, "file_path.md")
 
 
 def main(page: ft.Page):
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
-    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
     # Custom save method
-    def save_to_db(delta_ops: list):
-        print("Called save to db method")
+    def custom_save_method(delta_ops: list):
         print("Delta data to save: ", delta_ops)    # Doc editor text
 
     json_text_data = [{"insert": "This is a test json data"}, {"insert": "\n"}]
 
-    # Set text data from pdf - pass the file path directly
-    pdf_text_data = file_path_pdf
-
-    # Set text data from html - read the file content
-    with open(file_path_html, 'r', encoding='utf-8') as f:
-        html_text_data = f.read()
-
+    
     # Optional: load delta from JSON file
-    # with open(file_path, 'r') as f:
-    #     delta_text_data = json.load(f)
+    with open(file_path_deltaops, 'r') as f:
+        delta_text_data = json.load(f)
 
     page.add(
         ft.Container(
-            expand=True,
-            alignment = ft.alignment.center, 
+            expand=True, alignment=ft.alignment.center, 
+
+            # Set our content as a FletQuill. Styles below give it google docs/ms word look
             content=FletQuill(
 
                 # File path string you want to pass in
-                #file_path=file_path,    
-
-                # Text for the editor if not using file_path
-                #text_data=json_text_data,
-                #text_data=html_text_data,   
-                #text_data=pdf_text_data,   
-
-                #save_method=save_to_db,
+                file_path=file_path_deltaops,    
 
                 # Set border visibility and width
                 border_visible=True,
@@ -69,16 +60,13 @@ def main(page: ft.Page):
                 padding_right=72.0,
                 padding_bottom=72.0,
 
-                aspect_ratio=8.5/11.0,  # paper-like ratio
+                # Paper like ratio
+                aspect_ratio=8.5/11.0,
 
-                show_toolbar_divider=False,  # Show divider below toolbar
-                #use_zoom_factor=False,      # Use zoom factor when using aspect ratio (defaults True)
-                #center_toolbar=True,   # Center the toolbar (defaults False/left)
-                #scroll_toolbar=True,    # Scroll toolbar horizontally instead of wrapping
-
-                # Custom font sizes for the font-size dropdown
-                #font_sizes=[8, 9, 10, 11, 12, 14, 16, 18, 24, 32, 64],
-
+                # Show divider below toolbar
+                show_toolbar_divider=False,  
+                
+                # Placeholder text
                 placeholder_text="Start typing your document here...",
             ),
         ),

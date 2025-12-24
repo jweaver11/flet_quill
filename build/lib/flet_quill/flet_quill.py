@@ -5,15 +5,16 @@ import json
 from flet.core.constrained_control import ConstrainedControl
 from flet.core.control import OptionalNumber, Control
 from flet.core.event import Event
+import os
 
-from .text_converter import to_delta_ops
+from .text_converter import load_file_to_delta_ops
 
 
 class FletQuill(Control):
     """
     FletQuill Control is text editor utilizing the Flutter Quill Widget.
     It works on both desktop and mobile, with styling options to match your apps design.
-    Able to load in delta, html, or pdf formats, as well as export them.
+    Able to load in delta-json, html, pdf, docx, rtf, md, txt formats as well as export them.
     Example:
         ft.Container(
             expand=True,\n
@@ -66,8 +67,8 @@ class FletQuill(Control):
         #
         # FletQuill specific
         #
-        file_path: Optional[str] = None,    
-        text_data: Optional[Union[list, str, bytes, bytearray]] = None,
+        file_path: Optional[str] = None,    # str to file path to load and save to
+        text_data: Optional[list] = None,
         save_method: Optional[Callable[[list], None]] = None,
         border_visible: bool = False,
         border_width: float = 1.0,
@@ -96,12 +97,39 @@ class FletQuill(Control):
             expand=expand,
         )
 
-        # Set the file path that will be loaded on launch and save to it
-        self.file_path: str = file_path
 
-        # Text for the text editor if user doesn't want to just use file_path
+        # If we passed in text data (delta ops), set it
         if text_data is not None:
-            self.text_data = text_data  # Can be delta format, html, or pdf
+            self.text_data = text_data
+
+        # Otherwise, read and convert the file path to delta ops
+        elif file_path is not None:
+            self.text_data = load_file_to_delta_ops(file_path)
+
+            # Set our new file name to be a json for saving later, or we'll corrupt the original
+            file_name = os.path.basename(file_path)
+
+            if file_name.lower().endswith(".json"):
+                self.file_path = file_path
+
+            else:
+                new_file_name = os.path.splitext(file_name)[0] + ".json"
+                new_file_path = os.path.join(os.path.dirname(file_path), new_file_name)
+
+                # New file path it will save to in deltaop json format
+                self.file_path = new_file_path
+                
+            
+        # If not using either, set to None
+        else:
+            self.text_data = None
+            self.file_path = None
+
+
+
+       
+
+
 
         # Custom save methods save our text editor if user doesn't want to just use file_path
         self._save_method: Optional[Callable[[list], None]] = None
@@ -155,12 +183,13 @@ class FletQuill(Control):
             return None
 
     @text_data.setter
-    def text_data(self, value: Optional[Union[list, str, bytes, bytearray]]):
+    def text_data(self, value: Optional[list]):
         if value is None:
             self._set_attr("text_data", None)
             return
-        delta = to_delta_ops(value)
-        self._set_attr("text_data", json.dumps(delta))
+        if not isinstance(value, list):
+            raise TypeError("text_data must be a list of delta operations")
+        self._set_attr("text_data", json.dumps(value))
 
     # save_method (Python-side callback; Flutter triggers "save" event)
     @property
