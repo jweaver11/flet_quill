@@ -8,7 +8,7 @@ authors = [
     { name = "Josh Weaver", email = "joshuatweaver2000@gmail.com" }
 ]
 dependencies = [
-    "flet>=0.28.3",
+    "flet==0.28.3",
     "beautifulsoup4>=4.12.0",
     "pypdf>=5.0.0",
     "python-docx>=1.1.0",

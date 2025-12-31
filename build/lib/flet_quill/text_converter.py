@@ -8,14 +8,13 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
 import markdown
-from docx import Document
+from docx import Document 
 
     
 
-
-
 # Called to convert read and convert our file paths to delta ops (list)
 def load_file_to_delta_ops(file_path: str) -> list:
+    ''' Accepts our file path and calls the appropriate converter based on file type. '''
 
     # Set the file name from the path so we know what type it is
     file_name = os.path.basename(file_path)
@@ -45,6 +44,9 @@ def load_file_to_delta_ops(file_path: str) -> list:
     elif file_name.lower().endswith(".md") or file_name.lower().endswith(".markdown"):
         return delta_from_md(file_path)
 
+    # If its .docx file, load and return delta ops from that
+    elif file_name.lower().endswith(".docx"):
+        return delta_from_docx(file_path)
 
     # If not a supported file type, this error will fill the text editor
     else:
@@ -274,13 +276,14 @@ def delta_from_docx(file_path: str) -> list:
     '''
     Load Docx to delta ops
     '''
+    #from docx import Document
 
     document = Document(file_path)
     ops = []
 
     for para in document.paragraphs:
         # Determine paragraph-level attributes
-        style_name = para.style.name.lower()
+        style_name = para.style.name.lower() if para.style else ""
         block_attr = {}
 
         # Map heading styles
@@ -292,17 +295,14 @@ def delta_from_docx(file_path: str) -> list:
                 block_attr["header"] = 1
 
         # Map list style
-        elif "list" in style_name or "bullet" in style_name:
+        elif any(x in style_name for x in ["list", "bullet"]):
             block_attr["list"] = "bullet"
-
-        elif "numbered" in style_name or "ordered" in style_name:
+        elif any(x in style_name for x in ["numbered", "ordered"]):
             block_attr["list"] = "ordered"
-
         elif "quote" in style_name:
             block_attr["blockquote"] = True
 
         # Handle text runs within paragraph
-        paragraph_text = ""
         for run in para.runs:
             text = run.text
             if not text:
@@ -316,20 +316,24 @@ def delta_from_docx(file_path: str) -> list:
             if run.underline:
                 inline_attr["underline"] = True
 
-            # If run has style "Code" or fixed-width font, treat as code
-            if "code" in run.style.name.lower():
+            # Safely check run style for code
+            if run.style and "code" in run.style.name.lower():
                 inline_attr["code"] = True
 
             # Add run insert
-            ops.append({"insert": text, **({"attributes": inline_attr} if inline_attr else {})})
+            if inline_attr:
+                ops.append({"insert": text, "attributes": inline_attr})
+            else:
+                ops.append({"insert": text})
 
         # Add newline to separate blocks with any paragraph-level attributes
-        ops.append({
-            "insert": "\n",
-            **({"attributes": block_attr} if block_attr else {})
-        })
+        newline_op = {"insert": "\n"}
+        if block_attr:
+            newline_op["attributes"] = block_attr
+        ops.append(newline_op)
 
-    # Ensure at least one final newline
+    # Clean up empty ops and ensure final newline
+    ops = [op for op in ops if op["insert"].strip()]  # Remove empty inserts
     if not ops or ops[-1].get("insert") != "\n":
         ops.append({"insert": "\n"})
 

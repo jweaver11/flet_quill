@@ -109,26 +109,25 @@ class FletQuill(Control):
             # Set our new file name to be a json for saving later, or we'll corrupt the original
             file_name = os.path.basename(file_path)
 
+            # Json can read, so it needs no change
             if file_name.lower().endswith(".json"):
                 self.file_path = file_path
 
+            # Otherwise, make a new file name with the .json extension
             else:
                 new_file_name = os.path.splitext(file_name)[0] + ".json"
                 new_file_path = os.path.join(os.path.dirname(file_path), new_file_name)
 
                 # New file path it will save to in deltaop json format
                 self.file_path = new_file_path
+                # TIP: This saves to a new/different file, so keep track of new path after conversions
+                # or you'll be loading from old file and saving to a new one
                 
             
-        # If not using either, set to None
+        # If not using either, set to None. Editor will start blank and only save if save_method used
         else:
             self.text_data = None
             self.file_path = None
-
-
-
-       
-
 
 
         # Custom save methods save our text editor if user doesn't want to just use file_path
